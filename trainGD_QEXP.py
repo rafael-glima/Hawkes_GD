@@ -27,19 +27,19 @@ def trainGD_EXP(seq):
 
 		def funcqexp(x,alpha,beta,q):
 
-			if q == 1:
+			print('q: '+ repr(q))
+
+			if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
 
 				return alpha*np.exp(-beta*x)
 
-			elif (q != 1) and (1 + (1-q)*beta*x > 0):
+			elif (q != 1.) and (1 + (1-q)*beta*x > 0):
 
 				return np.exp(alpha*(1+(q-1)*beta*x),1/1-q)
 
 			else:
 
 				return 0
-
-
 
 		alpha = EXP_coeffs[1];
 
@@ -50,7 +50,7 @@ def trainGD_EXP(seq):
 		mu = EXP_coeffs[0]
 
 
-		if q == 1:
+		if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
 
 			if (alpha/beta < 1.) and (alpha/beta >= 0.):
 
@@ -84,15 +84,33 @@ def trainGD_EXP(seq):
 
 			intens[i] += mu;
 
-			if q == 1.:
+			if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
 
+				compens += (alpha/beta)*(1-np.exp(-beta*(T-seq[i])))
 
+			elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
 
-			compens += (alpha/beta)*(1-np.exp(-beta*(T-seq[i])))#quad(funcexp,0,T-seq[i], args=(alpha,beta))[0]
+				compens += alpha*((1-q)/(2-q))*(np.exp(1+(q-1)*beta*(T-seq[i]), (2-q)/(1-q))-1)
+
+			else:
+
+				compens += 0.
+
+			#compens += (alpha/beta)*(1-np.exp(-beta*(T-seq[i])))#quad(funcexp,0,T-seq[i], args=(alpha,beta))[0]
 
 			for j in range(0,i):
 
-				intens[i] += alpha*np.exp(-beta*(seq[i] - seq[j]))			
+				if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
+
+					intens[i] += alpha*np.exp(-beta*(seq[i] - seq[j]))
+
+				elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+
+					intens[i] += alpha*((1-q)/(2-q))*np.exp((1+(q-1)*beta*(seq[i]-seq[j])),(2-q)/(1-q))
+
+				else:
+
+					intens[i] += 0.
 
 		print ('Loglikelihood Train GD: ' + repr(np.sum(np.nan_to_num(np.log(intens))) - compens) + '\n')
 
