@@ -61,7 +61,11 @@ def trainGD_EXP(seq):
 
 	print('Final Parameters: '+ repr(par.x)+'\n')
 
-	K1_Param = {'EXP_coeffs': par.x, 'K1_Type': 'EXP', 'EXP_statcriter': par.x[1]/par.x[2]}
+	fin_llh = logGD_EXP(par.x)
+
+	fin_llh = (-1)*fin_llh
+
+	K1_Param = {'EXP_coeffs': par.x, 'K1_Type': 'EXP', 'EXP_statcriter': par.x[1]/par.x[2], 'final_llh': fin_llh}
 
 	return K1_Param
 

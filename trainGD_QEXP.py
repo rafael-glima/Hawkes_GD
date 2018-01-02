@@ -4,7 +4,7 @@ import numpy as np
 from scipy.integrate import quad
 #import numpy.random as np.random
 
-def trainGD_EXP(seq):
+def trainGD_QEXP(seq):
 
 	alpha_0 = np.random.rand()
 	beta_0 = 2*alpha_0
@@ -23,7 +23,7 @@ def trainGD_EXP(seq):
 
 	bnds = ((0,None),(0,None),(0,None))
 
-	def logGD_QEXP(EXP_coeffs):
+	def logGD_QEXP(QEXP_coeffs):
 
 		def funcqexp(x,alpha,beta,q):
 
@@ -41,13 +41,13 @@ def trainGD_EXP(seq):
 
 				return 0
 
-		alpha = EXP_coeffs[1];
+		alpha = QEXP_coeffs[1];
 
-		beta = EXP_coeffs[2];
+		beta = QEXP_coeffs[2];
 
-		q = EXP_Coeffs[3]
+		q = QEXP_Coeffs[3]
 
-		mu = EXP_coeffs[0]
+		mu = QEXP_coeffs[0]
 
 
 		if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
@@ -114,12 +114,28 @@ def trainGD_EXP(seq):
 
 		print ('Loglikelihood Train GD: ' + repr(np.sum(np.nan_to_num(np.log(intens))) - compens) + '\n')
 
+		if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
+
+			statcriter = alpha/beta
+
+		elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+
+			statcriter = (q-1)/(2-q)
+
+		else:
+
+			statcriter = 0.
+
 		return - np.sum(np.nan_to_num(np.log(intens))) + compens
 
 	par = minimize(logGD_EXP, [mu_0, alpha_0, beta_0, q_0], method='Nelder-Mead', tol=1e-2, options={'maxiter':10})
 
 	print('Final Parameters: '+ repr(par.x)+'\n')
 
-	K1_Param = {'EXP_coeffs': par.x, 'K1_Type': 'EXP', 'EXP_statcriter': par.x[1]/par.x[2]}
+	fin_llh = logGD_QEXP(par.x)
+
+	fin_llh = (-1)*fin_llh
+
+	K1_Param = {'QEXP_coeffs': par.x, 'K1_Type': 'QEXP', 'QEXP_statcriter': statcriter, 'final_llh': fin_llh}
 
 	return K1_Param
