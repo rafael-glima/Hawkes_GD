@@ -2,6 +2,7 @@ import scipy.io
 from scipy.optimize import minimize
 import numpy as np
 from scipy.integrate import quad
+import math
 #import numpy.random as np.random
 
 def trainGD_QEXP(seq):
@@ -35,7 +36,7 @@ def trainGD_QEXP(seq):
 
 			elif (q != 1.) and (1 + (1-q)*beta*x > 0):
 
-				return np.exp(alpha*(1+(q-1)*beta*x),1/1-q)
+				return np.power(alpha*(1+(q-1)*beta*x),1/1-q)
 
 			else:
 
@@ -45,7 +46,7 @@ def trainGD_QEXP(seq):
 
 		beta = QEXP_coeffs[2];
 
-		q = QEXP_Coeffs[3]
+		q = QEXP_coeffs[3]
 
 		mu = QEXP_coeffs[0]
 
@@ -61,7 +62,8 @@ def trainGD_QEXP(seq):
 				mu = 0. 
 				return np.inf
 
-		elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+		#elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+		elif (q != 1.) and ((q-1)*beta > 0.):
 
 			if (alpha*(q-1)/(2-q) < 1.) and (alpha*(q-1)/(2-q) > 0.):
 
@@ -88,9 +90,10 @@ def trainGD_QEXP(seq):
 
 				compens += (alpha/beta)*(1-np.exp(-beta*(T-seq[i])))
 
-			elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+			#elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+			elif (q != 1.) and ((q-1)*beta > 0.):
 
-				compens += alpha*((1-q)/(2-q))*(np.exp(1+(q-1)*beta*(T-seq[i]), (2-q)/(1-q))-1)
+				compens += alpha*((1-q)/(2-q))*(np.power(1+(q-1)*beta*(T-seq[i]), (2-q)/(1-q))-1)
 
 			else:
 
@@ -104,9 +107,10 @@ def trainGD_QEXP(seq):
 
 					intens[i] += alpha*np.exp(-beta*(seq[i] - seq[j]))
 
-				elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+				#elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+				elif (q != 1.) and ((q-1)*beta > 0.):
 
-					intens[i] += alpha*((1-q)/(2-q))*np.exp((1+(q-1)*beta*(seq[i]-seq[j])),(2-q)/(1-q))
+					intens[i] += alpha*((1-q)/(2-q))*np.power((1+(q-1)*beta*(seq[i]-seq[j])),(2-q)/(1-q))
 
 				else:
 
@@ -114,27 +118,38 @@ def trainGD_QEXP(seq):
 
 		print ('Loglikelihood Train GD: ' + repr(np.sum(np.nan_to_num(np.log(intens))) - compens) + '\n')
 
-		if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
-
-			statcriter = alpha/beta
-
-		elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
-
-			statcriter = (q-1)/(2-q)
-
-		else:
-
-			statcriter = 0.
-
 		return - np.sum(np.nan_to_num(np.log(intens))) + compens
 
-	par = minimize(logGD_EXP, [mu_0, alpha_0, beta_0, q_0], method='Nelder-Mead', tol=1e-2, options={'maxiter':10})
+	par = minimize(logGD_QEXP, [mu_0, alpha_0, beta_0, q_0], method='Nelder-Mead', tol=1e-2, options={'maxiter':10})
 
 	print('Final Parameters: '+ repr(par.x)+'\n')
 
 	fin_llh = logGD_QEXP(par.x)
 
 	fin_llh = (-1)*fin_llh
+
+	QEXP_coeffs = par.x
+
+	alpha = QEXP_coeffs[1];
+
+	beta = QEXP_coeffs[2];
+
+	q = QEXP_coeffs[3]
+
+	mu = QEXP_coeffs[0]
+
+	if math.isclose(q, 1., rel_tol=1e-3, abs_tol=0.0):
+
+		statcriter = alpha/beta
+
+	#elif (q != 1.) and (1 + (q-1)*beta*x > 0.):
+	elif (q != 1.) and ((q-1)*beta > 0.):
+
+		statcriter = (q-1)/(2-q)
+
+	else:
+
+		statcriter = 0.
 
 	K1_Param = {'QEXP_coeffs': par.x, 'K1_Type': 'QEXP', 'QEXP_statcriter': statcriter, 'final_llh': fin_llh}
 
